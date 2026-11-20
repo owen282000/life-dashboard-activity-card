@@ -34,6 +34,7 @@
 
 <p align="center">
   <picture>
+    <source media="(max-width: 600px) and (prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/owen282000/life-dashboard-activity-card/main/docs/readme-hero-phone-light.png">
     <source media="(max-width: 600px)" srcset="https://raw.githubusercontent.com/owen282000/life-dashboard-activity-card/main/docs/readme-hero-phone.png">
     <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/owen282000/life-dashboard-activity-card/main/docs/readme-hero-light.png">
     <img src="https://raw.githubusercontent.com/owen282000/life-dashboard-activity-card/main/docs/readme-hero.png" alt="The Activity card: rings for steps, active energy and exercise, a 5 days in a row pill and a week of bars against the goal. Wide screens add a one-ring version" width="900">
