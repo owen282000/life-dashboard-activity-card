@@ -6,6 +6,8 @@ All notable changes to this card are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.1.0] - 2026-11-20
+
 ### Added
 
 - First version: one to three daily goals as rings (steps, active energy and exercise), each against a goal that is a number or an `input_number` helper
@@ -16,4 +18,5 @@ All notable changes to this card are documented here. The format follows
 - Visual editor in the card picker, built on Home Assistant's own form
 - English, Arabic, Chinese, Dutch, French, German, Hindi, Italian, Japanese, Portuguese and Spanish, following the Home Assistant profile
 
-[Unreleased]: https://github.com/owen282000/life-dashboard-activity-card/commits/main
+[Unreleased]: https://github.com/owen282000/life-dashboard-activity-card/compare/0.1.0...HEAD
+[0.1.0]: https://github.com/owen282000/life-dashboard-activity-card/releases/tag/0.1.0
