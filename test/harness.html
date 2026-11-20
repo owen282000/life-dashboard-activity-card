@@ -1,0 +1,344 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Activity card harness</title>
+<style>
+  html { font-family: Roboto, "Helvetica Neue", Arial, sans-serif; }
+  body { margin: 0; padding: 24px; background: var(--primary-background-color); color: var(--primary-text-color); }
+  h2 { font-size: 13px; font-weight: 500; margin: 24px 0 8px; color: var(--secondary-text-color); }
+  h2:first-child { margin-top: 0; }
+  .row { display: flex; flex-wrap: wrap; gap: 24px; align-items: flex-start; }
+  .slot { flex: none; }
+  .theme-light {
+    --primary-background-color: #F3F6F4; --card-background-color: #FFFFFF; --ha-card-border-color: #D5DED9;
+    --divider-color: #E1E7E3; --primary-text-color: #101A15; --secondary-text-color: #56645D; --primary-color: #1E9665;
+  }
+  .theme-dark {
+    --primary-background-color: #0A0F0D; --card-background-color: #141C18; --ha-card-border-color: #27332D;
+    --divider-color: #222C27; --primary-text-color: #EEF4F0; --secondary-text-color: #A7B5AE; --primary-color: #30B77E;
+  }
+  .theme-ha-dark {
+    --primary-background-color: #111111; --card-background-color: #1C1C1C; --ha-card-border-color: #333333;
+    --divider-color: rgba(225, 225, 225, 0.12); --primary-text-color: #E1E1E1; --secondary-text-color: #9B9B9B; --primary-color: #03A9F4;
+  }
+  #results { white-space: pre-wrap; font: 12px monospace; }
+</style>
+</head>
+<body>
+<script type="module">
+  import { TIME_ZONE, hostileString, makeCallWS, scenes } from "./fixtures.mjs";
+  import "../dist/life-dashboard-activity-card.js";
+
+  const TAG = "life-dashboard-activity-card";
+
+  class FakeHaCard extends HTMLElement {
+    constructor() {
+      super();
+      this.attachShadow({ mode: "open" }).innerHTML = `<style>
+        :host { display: block; background: var(--ha-card-background, var(--card-background-color, #fff));
+          border: var(--ha-card-border-width, 1px) solid var(--ha-card-border-color, #e0e0e0);
+          border-radius: var(--ha-card-border-radius, 12px); color: var(--primary-text-color); }
+      </style><slot></slot>`;
+    }
+  }
+  if (!customElements.get("ha-card")) customElements.define("ha-card", FakeHaCard);
+
+  const params = new URLSearchParams(location.search);
+  const theme = params.get("theme") || "light";
+  document.documentElement.className = `theme-${theme}`;
+  document.documentElement.dir = params.get("dir") || "ltr";
+
+  function makeHass(scene, overrides = {}, log = []) {
+    const lang = params.get("lang") || "en-GB";
+    return {
+      states: scene.states,
+      entities: scene.devices?.entities ?? {},
+      devices: scene.devices?.devices ?? {},
+      language: lang,
+      locale: { language: lang, time_format: "language", time_zone: "server", number_format: "language" },
+      config: { time_zone: TIME_ZONE },
+      themes: { darkMode: theme !== "light" },
+      callWS: makeCallWS(scene, log),
+      ...overrides,
+    };
+  }
+
+  function mount(sceneId, width, config = {}) {
+    const scene = scenes[sceneId];
+    const card = document.createElement(TAG);
+    card.setConfig({ ...scene.config, ...config });
+    const slot = document.createElement("div");
+    slot.className = "slot";
+    slot.style.width = `${width}px`;
+    slot.append(card);
+    card.hass = makeHass(scene);
+    return slot;
+  }
+
+  async function runChecks() {
+    const out = [];
+    const check = (name, ok, detail = "") => out.push({ name, ok: Boolean(ok), detail: String(detail) });
+    const frame = (ms = 80) => new Promise((r) => setTimeout(r, ms));
+    const makeRow = (w) => { const d = document.createElement("div"); d.style.width = `${w}px`; d.style.marginTop = "70px"; document.body.append(d); return d; };
+    const texts = (root, selector) => [...root.querySelectorAll(selector)].map((n) => n.textContent);
+
+    // Three goals of one phone, with the integration's statistics.
+    const log = [];
+    const host = makeRow(360);
+    const card = document.createElement(TAG);
+    card.setConfig(scenes.app.config);
+    host.append(card);
+    const hass = makeHass(scenes.app, {}, log);
+    card.hass = hass;
+    await frame();
+    const sr = card.shadowRoot;
+    const q = (s) => sr.querySelector(s);
+    check("three rings, each a button", sr.querySelectorAll("button.ring").length === 3, sr.querySelectorAll(".ring").length);
+    check("the first ring is the one in the chart", texts(sr, 'button[aria-pressed="true"] .name').join() === "Steps", texts(sr, 'button[aria-pressed="true"] .name').join());
+    check("rings show today against the goal", texts(sr, ".figure").join("|") === "7,842|412|26" && /^of 10,000\|of 600 kcal\|of 30 mins?$/.test(texts(sr, ".of").join("|")), texts(sr, ".figure").join("|") + " " + texts(sr, ".of").join("|"));
+    check("rings say what is left", /^2,158 to go\|188 kcal to go\|4 mins? to go$/.test(texts(sr, ".left").join("|")), texts(sr, ".left").join("|"));
+    check("ring label reads as one sentence", q("button.ring").getAttribute("aria-label") === "Steps: 7,842 of 10,000. 2,158 to go", q("button.ring").getAttribute("aria-label"));
+    check("ring arcs follow the fraction", Math.abs(parseFloat(q(".gauge .value").getAttribute("stroke-dasharray")) / (2 * Math.PI * 42) - 0.7842) < 0.001, q(".gauge .value").getAttribute("stroke-dasharray"));
+    check("the phone's name is the subtitle", q(".sub")?.textContent === "Sam's Pixel", q(".sub")?.textContent);
+    check("streak of the goal in the chart", q(".pill")?.textContent === "5 days in a row" && q(".pill").getAttribute("aria-label") === "Steps: 5 days in a row", q(".pill")?.textContent);
+    check("seven bars, five on goal, today marked", sr.querySelectorAll(".bar").length === 7 && sr.querySelectorAll(".bar.met").length === 5 && sr.querySelectorAll(".bar.now").length === 1, `${sr.querySelectorAll(".bar").length} ${sr.querySelectorAll(".bar.met").length}`);
+    check("the goal line carries the goal", q(".goal span").textContent === "10,000", q(".goal span").textContent);
+    const goalTop = q(".goal").getBoundingClientRect().top;
+    const tops = [...sr.querySelectorAll(".bar")].map((b) => b.getBoundingClientRect().top);
+    check("bars on goal reach the goal line, the others stay under it", tops.every((top, i) => (i >= 1 && i <= 5 ? top <= goalTop + 0.5 : top > goalTop)), `${goalTop} / ${tops.map(Math.round).join()}`);
+    check("the week says how many days were on goal", /Goal reached on 5 of 7 days/.test(q(".week-head").textContent), q(".week-head").textContent);
+    check("a dot per goal under each day, filled when reached", sr.querySelectorAll(".dots i").length === 21 && sr.querySelectorAll(".dots i.met").length === 5 + 4 + 5, `${sr.querySelectorAll(".dots i").length} ${sr.querySelectorAll(".dots i.met").length}`);
+    check("text alternative has a row per day and a column per goal", sr.querySelectorAll("table tr").length === 8 && sr.querySelectorAll("table tr:last-child td").length === 3, sr.querySelectorAll("table tr").length);
+    check("text alternative names the day and the result", /Today/.test(q("table tr:last-child th").textContent) && /11,830 steps, Goal reached/.test(q("table tr:nth-last-child(2)").textContent), q("table tr:nth-last-child(2)").textContent);
+    check("the integration's own statistics are read", log.some((m) => m.type === "recorder/statistics_during_period" && m.period === "day" && m.statistic_ids.join() === "life_dashboard:01sampleentry0000000000000_steps,life_dashboard:01sampleentry0000000000000_active_calories,life_dashboard:01sampleentry0000000000000_exercise_minutes"), log.find((m) => m.statistic_ids)?.statistic_ids);
+    check("exercise in hours is shown in minutes", card._model.metrics[2].week.map((d) => d.value).join() === "41,18,55,34,38,31,26", card._model.metrics[2].week.map((d) => d.value).join());
+    check("no horizontal overflow at 360px", q(".root").scrollWidth <= q(".root").clientWidth + 1, `${q(".root").scrollWidth}/${q(".root").clientWidth}`);
+    check("no text is cut off in the rings", [...sr.querySelectorAll(".figure, .of, .name, .left")].every((n) => n.scrollWidth <= n.clientWidth + 1));
+    check("ring figures fit inside their ring", [...sr.querySelectorAll(".gauge")].every((g) => { const f = g.querySelector(".figure").getBoundingClientRect(); const o = g.querySelector(".of").getBoundingClientRect(); const box = g.getBoundingClientRect(); return Math.max(f.width, o.width) <= box.width * 0.72; }), [...sr.querySelectorAll(".of")].map((n) => Math.round(n.getBoundingClientRect().width)).join());
+
+    const renders = () => card._renders;
+    const asked = log.length;
+    const before = renders();
+    card.hass = { ...hass };
+    card.hass = makeHass(scenes.app, {}, log);
+    check("no re-render when nothing changed", renders() === before, `${before}->${renders()}`);
+    check("the statistics are asked for once", log.length === asked && log.filter((m) => m.type === "recorder/statistics_during_period").length === 1, log.length);
+    const steps = scenes.app.config.steps;
+    card.hass = makeHass({ ...scenes.app, states: { ...scenes.app.states, [steps]: { ...scenes.app.states[steps], state: "10020" } } }, {}, log);
+    check("re-render when a state changes", renders() === before + 1, `${before}->${renders()}`);
+    check("today reaching the goal extends the streak at once", q(".pill").textContent === "6 days in a row" && q(".left.done").textContent === "Goal reached" && q(".bar.now").classList.contains("met"), q(".pill").textContent);
+    card.hass = hass;
+    await frame();
+
+    // Another ring in the chart.
+    q('button[data-metric="energy"]').focus();
+    q('button[data-metric="energy"]').click();
+    check("a ring puts its goal in the chart", texts(sr, 'button[aria-pressed="true"] .name').join() === "Active energy" && /Active energy/.test(q(".week-head").textContent) && q(".goal span").textContent === "600 kcal", q(".week-head").textContent);
+    check("the streak follows the ring", q(".pill").textContent === "2 days in a row" && q(".pill").classList.contains("m-energy"), q(".pill").textContent);
+    check("focus stays on the ring after the switch", sr.activeElement?.dataset.metric === "energy", sr.activeElement?.className);
+    q('button[data-metric="steps"]').click();
+
+    // Pointer and keyboard on the days.
+    const plot = q(".plot");
+    const cols = [...sr.querySelectorAll(".col")];
+    cols[2].dispatchEvent(new PointerEvent("pointerenter", { pointerType: "mouse" }));
+    const tip = q(".tip");
+    check("hover shows the day's value", tip.classList.contains("on") && /13,200 steps/.test(tip.textContent) && /Goal reached/.test(tip.textContent), tip.textContent);
+    check("tooltip stays inside the plot horizontally", tip.offsetLeft >= 0 && tip.offsetLeft + tip.offsetWidth <= plot.clientWidth + 1, `${tip.offsetLeft} ${tip.offsetWidth}`);
+    cols[6].dispatchEvent(new PointerEvent("pointerenter", { pointerType: "mouse" }));
+    check("tooltip at the edge stays inside too", tip.offsetLeft + tip.offsetWidth <= plot.clientWidth + 1 && /Today/.test(tip.textContent) && !/Goal reached/.test(tip.textContent), `${tip.offsetLeft} ${tip.offsetWidth} ${tip.textContent}`);
+    plot.dispatchEvent(new PointerEvent("pointerleave", { pointerType: "mouse" }));
+    check("tooltip hides on leave", !tip.classList.contains("on") && card._active === -1);
+    cols[1].click();
+    check("a tap shows a day", card._active === 1 && tip.classList.contains("on"));
+    cols[1].click();
+    check("a second tap hides it", card._active === -1);
+    check("the days are a single tab stop", plot.tabIndex === 0 && sr.querySelectorAll("[tabindex]").length === 1, sr.querySelectorAll("[tabindex]").length);
+    plot.focus();
+    plot.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowLeft", bubbles: true }));
+    check("arrow key moves to a day", card._active === 5 && tip.classList.contains("on"), card._active);
+    check("slider announces the day", /11,830 steps, Goal reached\. Day 6 of 7/.test(plot.getAttribute("aria-valuetext")), plot.getAttribute("aria-valuetext"));
+    plot.dispatchEvent(new KeyboardEvent("keydown", { key: "Home", bubbles: true }));
+    check("Home goes to the first day", card._active === 0, card._active);
+    plot.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowLeft", bubbles: true }));
+    check("the first day is the end of the line", card._active === 0, card._active);
+    plot.dispatchEvent(new KeyboardEvent("keydown", { key: "End", bubbles: true }));
+    check("End goes to today", card._active === 6, card._active);
+    plot.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
+    check("Escape hides the tooltip", card._active === -1 && !plot.hasAttribute("aria-valuetext"));
+    plot.blur();
+
+    // One sensor from any integration.
+    const single = document.createElement(TAG);
+    makeRow(360).append(single);
+    single.setConfig(scenes.steps.config);
+    const singleLog = [];
+    single.hass = makeHass(scenes.steps, {}, singleLog);
+    await frame();
+    const ss = single.shadowRoot;
+    check("one sensor draws one ring, not a button", ss.querySelectorAll(".ring").length === 1 && ss.querySelectorAll("button").length === 0 && ss.querySelector(".ring").getAttribute("role") === "img");
+    check("one sensor has no dots and no goal name in the week", ss.querySelectorAll(".dots").length === 0 && !/Steps/.test(ss.querySelector(".week-head").textContent), ss.querySelector(".week-head").textContent);
+    check("another integration's sensor reads its own statistics", singleLog.some((m) => m.statistic_ids?.join() === "sensor.sams_watch_steps" && m.types.join() === "change,state,max"), singleLog.map((m) => m.type).join());
+    check("its week and streak come from those", ss.querySelectorAll(".bar.met").length === 5 && ss.querySelector(".pill").textContent === "5 days in a row", ss.querySelector(".pill")?.textContent);
+    check("no note when there is history", ss.querySelector(".note") === null);
+
+    // Goals from helpers, every goal reached, and the streak over all of them.
+    const reached = document.createElement(TAG);
+    makeRow(420).append(reached);
+    reached.setConfig(scenes.reached.config);
+    reached.hass = makeHass(scenes.reached);
+    await frame();
+    const rs = reached.shadowRoot;
+    check("goals come from input_number helpers", /^of 8,000\|of 500 kcal\|of 30 mins?$/.test(texts(rs, ".of").join("|")), texts(rs, ".of").join("|"));
+    check("reached goals say so, with a full ring", texts(rs, ".left.done").length === 3 && [...rs.querySelectorAll(".gauge .value")].every((c) => parseFloat(c.getAttribute("stroke-dasharray")) > 263), texts(rs, ".left").join("|"));
+    check("the streak over every goal says so", rs.querySelector(".pill").textContent === "4 days in a row, every goal", rs.querySelector(".pill")?.textContent);
+    reached.hass = makeHass({ ...scenes.reached, states: { ...scenes.reached.states, "input_number.step_goal": { ...scenes.reached.states["input_number.step_goal"], state: "12500" } } });
+    check("a helper that changes moves the goal", texts(rs, ".of")[0] === "of 12,500" && rs.querySelectorAll(".left.done").length === 2, texts(rs, ".of")[0]);
+
+    // No statistics yet.
+    const fresh = document.createElement(TAG);
+    makeRow(360).append(fresh);
+    fresh.setConfig(scenes.fresh.config);
+    fresh.hass = makeHass(scenes.fresh);
+    await frame();
+    const fs = fresh.shadowRoot;
+    check("a sensor without statistics draws today and says why the rest is empty", fs.querySelectorAll(".bar.has").length === 1 && /daily statistics/.test(fs.querySelector(".note")?.textContent || "") && fs.querySelector(".pill") === null, fs.querySelector(".note")?.textContent);
+    const failing = document.createElement(TAG);
+    makeRow(360).append(failing);
+    failing.setConfig(scenes.fresh.config);
+    failing.hass = makeHass(scenes.fresh, { callWS: async () => { throw new Error("no recorder"); } });
+    await frame();
+    check("a recorder that fails still draws today", failing.shadowRoot.querySelector(".figure").textContent === "3,120" && failing.shadowRoot.querySelectorAll(".bar.has").length === 1);
+    const plain = document.createElement(TAG);
+    makeRow(360).append(plain);
+    plain.setConfig(scenes.fresh.config);
+    plain.hass = makeHass(scenes.fresh, { callWS: undefined });
+    check("a hass without a connection still draws today", plain.shadowRoot.querySelector(".figure").textContent === "3,120");
+
+    // Broken sensors and the empty state.
+    const broken = document.createElement(TAG);
+    makeRow(360).append(broken);
+    broken.setConfig(scenes.broken.config);
+    broken.hass = makeHass(scenes.broken);
+    await frame();
+    const bs = broken.shadowRoot;
+    check("an unavailable and a missing sensor say so in their ring", texts(bs, ".left").join("|") === "5,690 to go|Unavailable|Not found" && texts(bs, ".figure").join("|") === "4,310|?|?", texts(bs, ".left").join("|"));
+    check("their labels do too", bs.querySelector('[data-metric="exercise"]').getAttribute("aria-label") === "Exercise: Not found", bs.querySelector('[data-metric="exercise"]').getAttribute("aria-label"));
+    const empty = document.createElement(TAG);
+    makeRow(360).append(empty);
+    empty.setConfig(scenes.empty.config);
+    empty.hass = makeHass(scenes.empty);
+    check("no sensor shows the empty state", empty.shadowRoot.querySelector(".empty-figure")?.textContent === "Choose a sensor" && empty.shadowRoot.querySelectorAll(".ring").length === 0);
+
+    // Option values must never become markup.
+    window.__pwned = undefined;
+    const hostile = document.createElement(TAG);
+    makeRow(360).append(hostile);
+    hostile.setConfig({ ...scenes.app.config, title: hostileString, steps_goal: hostileString, streak: hostileString });
+    hostile.hass = makeHass({ ...scenes.app, devices: { entities: { [steps]: { device_id: "x" } }, devices: { x: { name: hostileString } } } });
+    await frame();
+    check("hostile values create no elements", hostile.shadowRoot.querySelectorAll("img").length === 0 && window.__pwned === undefined);
+    check("hostile title and device name render as text", hostile.shadowRoot.querySelector(".title").textContent.includes("<img") && hostile.shadowRoot.querySelector(".sub").textContent.includes("<img"));
+    check("a hostile goal falls back to the default", hostile.shadowRoot.querySelector(".of").textContent === "of 10,000");
+
+    // Narrow, and right to left.
+    const narrow = document.createElement(TAG);
+    makeRow(240).append(narrow);
+    narrow.setConfig(scenes.app.config);
+    narrow.hass = makeHass(scenes.app);
+    await frame();
+    const ns = narrow.shadowRoot;
+    check("no overflow at 240px", ns.querySelector(".root").scrollWidth <= ns.querySelector(".root").clientWidth + 1 && [...ns.querySelectorAll(".figure, .of")].every((n) => n.scrollWidth <= n.clientWidth + 1), `${ns.querySelector(".root").scrollWidth}/${ns.querySelector(".root").clientWidth}`);
+    const rtlHost = makeRow(360);
+    rtlHost.dir = "rtl";
+    const rtl = document.createElement(TAG);
+    rtlHost.append(rtl);
+    rtl.setConfig(scenes.app.config);
+    rtl.hass = makeHass(scenes.app, { locale: { language: "ar" }, language: "ar" });
+    await frame();
+    const rr = rtl.shadowRoot;
+    const rcols = [...rr.querySelectorAll(".col")].map((c) => c.getBoundingClientRect().left);
+    check("rtl runs the days right to left, today on the left", rcols[6] < rcols[0], `${rcols[0]} ${rcols[6]}`);
+    check("rtl translates and does not overflow", rr.querySelector(".name").textContent === "الخطوات" && rr.querySelector(".root").scrollWidth <= rr.querySelector(".root").clientWidth + 1, rr.querySelector(".name").textContent);
+    rr.querySelector(".plot").focus();
+    rr.querySelector(".plot").dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowRight", bubbles: true }));
+    check("rtl: the right arrow goes back a day", rtl._active === 5, rtl._active);
+    rr.querySelector(".plot").blur();
+
+    // Picker support and editor.
+    const Card = customElements.get(TAG);
+    check("getStubConfig finds the phone's three sensors", JSON.stringify(Card.getStubConfig(makeHass(scenes.app))) === JSON.stringify({ steps: scenes.app.config.steps, energy: scenes.app.config.energy, exercise: scenes.app.config.exercise }), JSON.stringify(Card.getStubConfig(makeHass(scenes.app))));
+    check("getStubConfig without a sensor is usable", JSON.stringify(Card.getStubConfig(makeHass(scenes.empty))) === '{"steps":""}');
+    check("registered in window.customCards", window.customCards.some((c) => c.type === TAG && c.preview === true));
+    check("grid options are auto height", card.getGridOptions().rows === "auto" && card.getCardSize() > 0);
+    let threw = false;
+    try { document.createElement(TAG).setConfig({ steps: ["sensor.a"] }); } catch { threw = true; }
+    check("setConfig rejects a sensor that is not an entity id", threw);
+    threw = false;
+    try { document.createElement(TAG).setConfig(null); } catch { threw = true; }
+    check("setConfig rejects no config", threw);
+
+    let changed = null;
+    class FakeHaForm extends HTMLElement {}
+    customElements.define("ha-form", FakeHaForm);
+    const editor = Card.getConfigElement();
+    document.body.append(editor);
+    editor.setConfig({ type: `custom:${TAG}`, steps, steps_goal: "input_number.step_goal", energy_goal: 450 });
+    editor.hass = makeHass(scenes.app);
+    editor.addEventListener("config-changed", (e) => { changed = e.detail.config; });
+    const form = editor.shadowRoot.querySelector("ha-form");
+    const names = form?.schema?.flatMap((s) => (s.schema ? s.schema.map((x) => x.name) : [s.name])).join();
+    check("editor renders ha-form with a sensor and a goal per ring", names === "title,steps,steps_goal,steps_goal_entity,energy,energy_goal,energy_goal_entity,exercise,exercise_goal,exercise_goal_entity,streak", names);
+    check("editor hands hass and data to ha-form", form.hass === editor._hass && form.data.steps === steps && form.data.steps_goal_entity === "input_number.step_goal" && form.data.energy_goal === 450 && form.data.streak === "selected", JSON.stringify(form.data));
+    check("editor labels every field", form.schema.flatMap((s) => s.schema ?? [s]).every((s) => form.computeLabel(s) && form.computeLabel(s) !== s.name) && form.computeLabel({ name: "energy_goal" }) === "Active energy: Daily goal", form.computeLabel({ name: "energy_goal" }));
+    form.dispatchEvent(new CustomEvent("value-changed", { detail: { value: { ...form.data, title: "Move", exercise: "sensor.x", exercise_goal: 45 } } }));
+    check("editor emits config-changed with the goals in one key each", changed?.title === "Move" && changed.steps_goal === "input_number.step_goal" && changed.energy_goal === 450 && changed.exercise_goal === 45 && !("steps_goal_entity" in changed) && !("streak" in changed) && changed.type === `custom:${TAG}`, JSON.stringify(changed));
+
+    const fails = out.filter((r) => !r.ok);
+    const pre = document.createElement("pre");
+    pre.id = "results";
+    pre.textContent = `CHECKS ${out.length - fails.length}/${out.length}\n` + out.map((r) => `${r.ok ? "PASS" : "FAIL"}  ${r.name}  [${r.detail}]`).join("\n");
+    document.body.replaceChildren(pre);
+  }
+
+  const config = {};
+  if (params.get("title")) config.title = params.get("title");
+  if (params.get("streak")) config.streak = params.get("streak");
+
+  if (params.has("check")) {
+    runChecks();
+  } else if (params.has("hero")) {
+    // The README's picture: with the app's three sensors, and with one steps sensor.
+    document.body.style.padding = "32px";
+    const row = document.createElement("div");
+    row.className = "row";
+    row.style.gap = "28px";
+    row.append(mount("app", Number(params.get("width") || 400), config), mount("steps", Number(params.get("width") || 400), config));
+    document.body.append(row);
+  } else if (params.has("one")) {
+    document.body.append(mount(params.get("one"), Number(params.get("width") || 400), config));
+    const card = document.querySelector(TAG);
+    setTimeout(() => {
+      if (params.get("ring")) card.shadowRoot.querySelector(`button[data-metric="${params.get("ring")}"]`)?.click();
+      if (params.get("hover") !== null) {
+        card.shadowRoot.querySelectorAll(".col")[Number(params.get("hover"))]?.dispatchEvent(new PointerEvent("pointerenter", { pointerType: "mouse" }));
+      }
+    }, 200);
+  } else {
+    const wide = Number(params.get("wide") || 420);
+    const phone = Number(params.get("phone") || 300);
+    const titles = { app: "Life Dashboard: three sensors of one phone", steps: "One steps sensor from any integration", reached: "Every goal reached, goals from helpers", fresh: "No statistics yet", broken: "Unavailable and missing sensors", empty: "Empty state" };
+    for (const scene of (params.get("scenes") || Object.keys(titles).join()).split(",")) {
+      const heading = document.createElement("h2");
+      heading.textContent = titles[scene] || scene;
+      const row = document.createElement("div");
+      row.className = "row";
+      row.append(mount(scene, wide, {}), mount(scene, phone, {}));
+      document.body.append(heading, row);
+    }
+  }
+</script>
+</body>
+</html>

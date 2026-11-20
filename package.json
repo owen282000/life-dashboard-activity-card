@@ -1,0 +1,11 @@
+{
+  "name": "life-dashboard-activity-card",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "A Home Assistant dashboard card for daily activity goals: steps, active energy and exercise as rings, the last seven days and a streak.",
+  "scripts": {
+    "test": "node --test test/data.test.mjs"
+  },
+  "license": "MIT"
+}
