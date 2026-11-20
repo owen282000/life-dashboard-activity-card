@@ -10,7 +10,7 @@
 </p>
 
 <p align="center">
-  <a href="https://my.home-assistant.io/redirect/hacs_repository/?owner=owen282000&repository=life-dashboard-activity-card&category=plugin"><img src="https://img.shields.io/badge/Marketplace-Custom%20repository-41BDF5" alt="Add it to the Home Assistant Marketplace as a custom repository"></a>
+  <a href="https://my.home-assistant.io/redirect/hacs_repository/?owner=owen282000&repository=life-dashboard-activity-card&category=plugin"><img src="https://img.shields.io/badge/HACS-custom%20repository-41BDF5" alt="HACS: custom repository"></a>
   <a href="https://github.com/owen282000/life-dashboard-activity-card/releases/latest"><img src="https://img.shields.io/github/v/release/owen282000/life-dashboard-activity-card?label=Release&color=30b77e" alt="Latest release"></a>
   <a href="https://www.home-assistant.io/"><img src="https://img.shields.io/badge/Home%20Assistant-2026.3%2B-41BDF5" alt="Home Assistant 2026.3 or newer"></a>
   <a href="https://github.com/owen282000/life-dashboard-activity-card/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue" alt="MIT license"></a>
@@ -26,21 +26,28 @@
   <a href="https://owen282000.com/life-dashboard/">Website</a>
 </p>
 
+<!-- life-dashboard:nav -->
 <p align="center">
-  <sub>Life Dashboard: <a href="https://github.com/owen282000/life-dashboard-companion-app">Android app</a> &nbsp;·&nbsp; <a href="https://github.com/owen282000/life-dashboard-companion-app-ios">iPhone app</a> &nbsp;·&nbsp; <a href="https://github.com/owen282000/life-dashboard-ha">Home Assistant integration</a> &nbsp;·&nbsp; <a href="https://github.com/owen282000/life-dashboard-stack">Grafana stack</a> &nbsp;·&nbsp; <a href="https://github.com/owen282000/life-dashboard-sleep-card">Sleep card</a> &nbsp;·&nbsp; <a href="https://github.com/owen282000/life-dashboard-screen-time-card">Screen time cards</a> &nbsp;·&nbsp; <b>Activity card</b></sub>
+  <sub>Life Dashboard: <a href="https://github.com/owen282000/life-dashboard-companion-app">Android app</a> &nbsp;·&nbsp; <a href="https://github.com/owen282000/life-dashboard-companion-app-ios">iPhone app</a> &nbsp;·&nbsp; <a href="https://github.com/owen282000/life-dashboard-ha">Home Assistant integration</a> &nbsp;·&nbsp; <a href="https://github.com/owen282000/life-dashboard-stack">Grafana stack</a> &nbsp;·&nbsp; <a href="https://github.com/owen282000/life-dashboard-sleep-card">Sleep card</a> &nbsp;·&nbsp; <a href="https://github.com/owen282000/life-dashboard-screen-time-card">Screen time cards</a> &nbsp;·&nbsp; <a href="https://github.com/owen282000/life-dashboard-year-card">Year card</a> &nbsp;·&nbsp; <b>Activity card</b> &nbsp;·&nbsp; <a href="https://github.com/owen282000/life-dashboard-before-bed-card">Before bed card</a></sub>
 </p>
+<!-- /life-dashboard:nav -->
 
 <p align="center">
   <picture>
     <source media="(max-width: 600px)" srcset="https://raw.githubusercontent.com/owen282000/life-dashboard-activity-card/main/docs/readme-hero-phone.png">
-    <img src="https://raw.githubusercontent.com/owen282000/life-dashboard-activity-card/main/docs/readme-hero.png" alt="The card twice on a dark theme. On the left with three sensors of one phone: rings for 7,842 of 10,000 steps, 412 of 600 kcal active energy and 26 of 30 minutes of exercise, each with what is left to go, a pill that says 5 days in a row, and seven bars against a dashed goal line with a dot per goal under each day. On the right with one steps sensor: a single larger ring and the same week" width="900">
+    <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/owen282000/life-dashboard-activity-card/main/docs/readme-hero-light.png">
+    <img src="https://raw.githubusercontent.com/owen282000/life-dashboard-activity-card/main/docs/readme-hero.png" alt="The Activity card: rings for steps, active energy and exercise, a 5 days in a row pill and a week of bars against the goal. Wide screens add a one-ring version" width="900">
   </picture>
-  <br><sub>Sample data from a made-up phone. Left: three sensors. Right: one steps sensor</sub>
+  <br><sub>Sample data from a made-up phone. Three sensors: 7,842 of 10,000 steps, 412 of 600 kcal and 26 of 30 minutes, each with what is left to go, and a dot per goal under each day. On a wide screen the card with one steps sensor is next to it</sub>
 </p>
 
-The card reads up to three sensors and draws today against a goal for each. The earlier days and the streak come from the long-term statistics Home Assistant already keeps. It works with any steps sensor you have, from Fitbit, Garmin, Withings or the official Companion app. With the [Life Dashboard app](https://github.com/owen282000/life-dashboard-companion-app) on your phone it fills all three rings by itself.
+The card reads up to three sensors and draws today against a goal for each. The earlier days and the streak come from the long-term statistics Home Assistant already keeps.
+
+With the [Life Dashboard app](https://github.com/owen282000/life-dashboard-companion-app) on your phone the card fills itself: all three rings from whatever watch or app counted them, and a full week and streak on the first day instead of a chart that starts today.
 
 <a href="https://play.google.com/store/apps/details?id=com.owen282000.lifedashboard&referrer=utm_source%3Dgh-activity-readme%26utm_medium%3Dreadme"><img src="https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png" alt="Get it on Google Play" height="60" align="middle"></a> <a href="https://apps.apple.com/app/apple-store/id6824075761?pt=128699800&ct=gh-activity-readme&mt=8"><img src="https://raw.githubusercontent.com/owen282000/life-dashboard-activity-card/main/docs/badges/app-store.png" alt="Download on the App Store" height="40" align="middle"></a>
+
+The card also works without the app, with any steps sensor you have, from Fitbit, Garmin, Withings or Home Assistant's Companion app. See [Works with any sensor](https://github.com/owen282000/life-dashboard-activity-card#works-with-any-sensor).
 
 ## What you get
 
@@ -50,11 +57,6 @@ The card reads up to three sensors and draws today against a goal for each. The 
 - **Goals you can change.** A number in the card, or an `input_number` helper, so a button, an automation or a slider on your dashboard can move the goal.
 - **Every day on demand.** Hover or tap a bar for its date and value. On a keyboard, focus the chart and use the arrow keys, Home and End. Screen readers get a table of the week.
 - **Your locale and theme.** English, Arabic, Chinese, Dutch, French, German, Hindi, Italian, Japanese, Portuguese and Spanish, numbers in your language, and your theme's colors in light and dark.
-
-<p align="center">
-  <img src="https://raw.githubusercontent.com/owen282000/life-dashboard-activity-card/main/docs/readme-hero-light.png" alt="The same two cards on a light theme" width="900">
-  <br><sub>Sample data, on a light theme</sub>
-</p>
 
 ## Install
 
@@ -76,6 +78,12 @@ lovelace:
 ### By hand
 
 Copy `dist/life-dashboard-activity-card.js` into the `www` folder of your Home Assistant configuration and add it as a resource of the type JavaScript module with the URL `/local/life-dashboard-activity-card.js`.
+
+### Is it working?
+
+After downloading, refresh the browser, or you get "Custom element doesn't exist: life-dashboard-activity-card". You should now see **Life Dashboard Activity** in the card picker.
+
+The picker fills in the sensors it finds by the end of their entity id: `_steps_today`, `_daily_steps` or `_steps` for steps, `_active_calories_today`, `_active_calories`, `_active_energy` or `_active_energy_burned` for active energy, and `_exercise_today`, `_exercise_minutes`, `_exercise_time` or `_active_minutes` for exercise. If a ring stays empty, that sensor does not exist yet or has another name, and you can pick it yourself in the editor. With the Life Dashboard app the sensors appear after the phone's first sync, and **Exercise today** only once the phone has sent a workout.
 
 ## Configure
 
@@ -129,7 +137,7 @@ The [Life Dashboard app](https://github.com/owen282000/life-dashboard-companion-
 - **All three rings.** Active energy and exercise minutes come along from Health Connect and Apple Health, so you need no separate sensor for them.
 - **A week on the first day.** The integration keeps a total per day as its own long-term statistics, and **Send history** in the app sends the days from before you installed it. The chart and the streak are filled in from the start instead of beginning today.
 
-The app is free and open source on GitHub and F-Droid for Android. The store versions cost a few euros once, if you would rather have updates handled for you: [Google Play](https://play.google.com/store/apps/details?id=com.owen282000.lifedashboard&referrer=utm_source%3Dgh-activity-readme%26utm_medium%3Dreadme) for the [Android app](https://github.com/owen282000/life-dashboard-companion-app) and the [App Store](https://apps.apple.com/app/apple-store/id6824075761?pt=128699800&ct=gh-activity-readme&mt=8) for the [iPhone app](https://github.com/owen282000/life-dashboard-companion-app-ios).
+The app is free and open source: for Android as an APK on GitHub and on F-Droid, and the iPhone app can be built yourself. If you would rather have updates handled for you, it is listed on Google Play and the App Store as Health Data for Home Assistant: [Google Play](https://play.google.com/store/apps/details?id=com.owen282000.lifedashboard&referrer=utm_source%3Dgh-activity-readme%26utm_medium%3Dreadme) for the [Android app](https://github.com/owen282000/life-dashboard-companion-app) at €4.99 (US$4.99) once, and the [App Store](https://apps.apple.com/app/apple-store/id6824075761?pt=128699800&ct=gh-activity-readme&mt=8) for the [iPhone app](https://github.com/owen282000/life-dashboard-companion-app-ios) at €6.99 (US$5.99) once.
 
 ## Colors
 
@@ -179,6 +187,17 @@ This card sits on top of Life Dashboard's other parts, and you only install the 
 
 The card only reads what Home Assistant already gives your browser: the sensors' state and, for the earlier days, the recorder's statistics. It makes no requests of its own, has no telemetry or analytics, and there's no server of mine in the path.
 
+<!-- life-dashboard:built -->
+## How this is built
+
+Life Dashboard is a one-person project, and [Claude Code](https://claude.com/claude-code) writes a large part of the code. I decide what gets built, read every change before it is merged, and test it on my own phones and Home Assistant before a release. Automated checks run on every pull request, and the [AI policy](https://github.com/owen282000/life-dashboard-companion-app/blob/main/AI_POLICY.md) explains what the AI does and what I check.
+<!-- /life-dashboard:built -->
+
+## Documentation
+
+- [Changelog](https://github.com/owen282000/life-dashboard-activity-card/blob/main/CHANGELOG.md)
+- [The Health dashboard](https://github.com/owen282000/life-dashboard-ha/blob/main/docs/dashboard.md) of the integration, to put this card on
+
 ## Help and contributing
 
 Bugs go to [issues](https://github.com/owen282000/life-dashboard-activity-card/issues) here. Questions go to the integration's [Discussions](https://github.com/owen282000/life-dashboard-ha/discussions). No GitHub account? Use the [feedback board](https://owen282000.com/life-dashboard/feedback/), which needs no account. Everything on it is public, so leave out health data, logs and webhook URLs.
@@ -191,8 +210,10 @@ Stars, shares and good bug reports all help. If you want to chip in for the even
 
 MIT licensed. See [LICENSE](https://github.com/owen282000/life-dashboard-activity-card/blob/main/LICENSE).
 
+<!-- life-dashboard:footer -->
 <p align="center">
   <sub>Made by <a href="https://github.com/owen282000">Owen Vogelaar</a> for the self-hosting and quantified self crowd.</sub><br>
   <sub>Google Play and the Google Play logo are trademarks of Google LLC.</sub><br>
   <sub>Apple, the Apple logo and App Store are trademarks of Apple Inc.</sub>
 </p>
+<!-- /life-dashboard:footer -->
