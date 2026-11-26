@@ -140,7 +140,9 @@ The [Life Dashboard app](https://github.com/owen282000/life-dashboard-companion-
 - **All three rings.** Active energy and exercise minutes come along from Health Connect and Apple Health, so you need no separate sensor for them.
 - **A week on the first day.** The integration keeps a total per day as its own long-term statistics, and **Send history** in the app sends the days from before you installed it. The chart and the streak are filled in from the start instead of beginning today.
 
-The app is free and open source: for Android as an APK on GitHub and on F-Droid, and the iPhone app can be built yourself. If you would rather have updates handled for you, it is listed on Google Play and the App Store as Health Data for Home Assistant: [Google Play](https://play.google.com/store/apps/details?id=com.owen282000.lifedashboard&referrer=utm_source%3Dgh-activity-readme%26utm_medium%3Dreadme) for the [Android app](https://github.com/owen282000/life-dashboard-companion-app) at €4.99 (US$4.99) once, and the [App Store](https://apps.apple.com/app/apple-store/id6824075761?pt=128699800&ct=gh-activity-readme&mt=8) for the [iPhone app](https://github.com/owen282000/life-dashboard-companion-app-ios) at €6.99 (US$5.99) once.
+The app is listed on Google Play and the App Store as Health Data for Home Assistant: [Google Play](https://play.google.com/store/apps/details?id=com.owen282000.lifedashboard&referrer=utm_source%3Dgh-activity-readme%26utm_medium%3Dreadme) for the [Android app](https://github.com/owen282000/life-dashboard-companion-app) at €4.99 (US$4.99) once, and the [App Store](https://apps.apple.com/app/apple-store/id6824075761?pt=128699800&ct=gh-activity-readme&mt=8) for the [iPhone app](https://github.com/owen282000/life-dashboard-companion-app-ios) at €6.99 (US$5.99) once, with automatic updates and no subscription.
+
+Other ways to install: the app is open source, so the Android APK is free [on GitHub](https://github.com/owen282000/life-dashboard-companion-app#install) and on F-Droid, and you can build the iPhone app yourself with an Apple Developer Program membership.
 
 ## Colors
 
